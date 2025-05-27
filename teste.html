@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Avaliação Drag & Drop - Densidade Melhorada</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    color: #222;
+  }
+
+  h1 {
+    margin: 48px 0 24px;
+    font-weight: 700;
+    font-size: 2.8rem;
+    letter-spacing: 0.08em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.12);
+    user-select:none;
+  }
+
+  .zones {
+    width: 90vw;
+    max-width: 650px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    user-select:none;
+  }
+
+  .zone {
+    flex: 1;
+    border-radius: 20px;
+    padding: 28px 12px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s ease;
+    position: relative;
+    user-select:none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    box-shadow:
+      0 6px 12px rgba(0,0,0,0.18),
+      inset 0 -3px 6px rgba(255,255,255,0.15);
+    background: linear-gradient(145deg, rgba(255 255 255 / 0.15), rgba(255 255 255 / 0.07)),
+                linear-gradient(135deg, #00000022 0%, transparent 100%);
+    backdrop-filter: saturate(180%) blur(6px);
+  }
+  .zone:hover {
+    box-shadow:
+      0 12px 22px rgba(0,0,0,0.3),
+      inset 0 -5px 8px rgba(255,255,255,0.22);
+    transform: translateY(-6px) scale(1.05);
+    z-index: 5;
+  }
+
+  .zone-label {
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    user-select:none;
+  }
+
+  .zone-emoji {
+    font-size: 3.8rem;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.25));
+    user-select:none;
+  }
+
+  /* Cores degradê e leve textura para zonas */
+  .zone[data-value="1"] {
+    background:
+      repeating-radial-gradient(circle at center, #e74c3c 0 2px, #c0392b 2px 4px),
+      linear-gradient(135deg, #e74c3c, #c0392b);
+  }
+  .zone[data-value="2"] {
+    background:
+      repeating-radial-gradient(circle at center, #e67e22 0 2px, #d35400 2px 4px),
+      linear-gradient(135deg, #e67e22, #d35400);
+  }
+  .zone[data-value="3"] {
+    background:
+      repeating-radial-gradient(circle at center, #f1c40f 0 2px, #f39c12 2px 4px),
+      linear-gradient(135deg, #f1c40f, #f39c12);
+    color: #333;
+  }
+  .zone[data-value="4"] {
+    background:
+      repeating-radial-gradient(circle at center, #2ecc71 0 2px, #27ae60 2px 4px),
+      linear-gradient(135deg, #2ecc71, #27ae60);
+  }
+  .zone[data-value="5"] {
+    background:
+      repeating-radial-gradient(circle at center, #3498db 0 2px, #2980b9 2px 4px),
+      linear-gradient(135deg, #3498db, #2980b9);
+  }
+
+  /* Ícone prato com sombra e efeito “peso” */
+  #plate {
+    font-size: 70px;
+    position: absolute;
+    top: 60vh;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    user-select:none;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    z-index: 1000;
+    filter:
+      drop-shadow(0 10px 8px rgba(0,0,0,0.22));
+  }
+  #plate.dragging {
+    cursor: grabbing;
+    box-shadow:
+      0 0 40px #2980b9cc,
+      0 10px 12px rgba(0,0,0,0.38);
+    transform: scale(1.1);
+  }
+
+  /* Campo problema escondido inicialmente com mais peso */
+  #problemField {
+  margin-top: 40px;
+  width: 90vw;
+  max-width: 650px;
+  opacity: 0;
+  transform: translateY(20px);
+  visibility: hidden;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#problemField.visible {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+  #problemField label {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    display: block;
+    color: #222;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+  }
+  #problemField textarea {
+    width: 100%;
+    height: 140px;
+    padding: 18px 16px;
+    border-radius: 20px;
+    border: 2px solid #3498db;
+    font-size: 1.15rem;
+    resize: vertical;
+    font-family: 'Montserrat', sans-serif;
+    box-shadow:
+      inset 0 0 10px rgba(52,152,219,0.45),
+      0 4px 8px rgba(0,0,0,0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  #problemField textarea:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow:
+      inset 0 0 18px #2980b9cc,
+      0 6px 14px rgba(41,128,185,0.7);
+  }
+
+  /* Botão enviar mais “pesado”, 3D e convidativo */
+  #submitBtn {
+    margin-top: 40px;
+    padding: 18px 0;
+    width: 90vw;
+    max-width: 650px;
+    font-weight: 700;
+    font-size: 1.4rem;
+    border-radius: 40px;
+    border: none;
+    background: linear-gradient(145deg, #2980b9, #3498db);
+    color: white;
+    box-shadow:
+      0 12px 20px #1b5199cc,
+      inset 0 -6px 12px #2171d7;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, box-shadow 0.3s ease;
+    user-select:none;
+  }
+  #submitBtn.enabled {
+    opacity: 1;
+    pointer-events: auto;
+    animation: pulse 2s infinite;
+  }
+  #submitBtn:hover {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    box-shadow:
+      0 18px 32px #1463c2cc,
+      inset 0 -8px 18px #2f88e3;
+  }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52,152,219, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(52,152,219, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52,152,219, 0); }
+}
+
+</style>
+</head>
+<body>
+
+<h1>Como foi a sua experiência?</h1>
+<h4>Arraste o prato até à opinião.</h4>
+
+<div class="zones" aria-label="Zonas de avaliação" role="list">
+  <div class="zone" data-value="1" role="listitem" aria-label="Muito insatisfeito">
+    <div class="zone-emoji">😡</div>
+    <div class="zone-label">Muito Insatisfeito</div>
+  </div>
+  <div class="zone" data-value="2" role="listitem" aria-label="Insatisfeito">
+    <div class="zone-emoji">🙁</div>
+    <div class="zone-label">Insatisfeito</div>
+  </div>
+  <div class="zone" data-value="3" role="listitem" aria-label="Neutro">
+    <div class="zone-emoji">😐</div>
+    <div class="zone-label">Neutro</div>
+  </div>
+  <div class="zone" data-value="4" role="listitem" aria-label="Satisfeito">
+    <div class="zone-emoji">🙂</div>
+    <div class="zone-label">Satisfeito</div>
+  </div>
+  <div class="zone" data-value="5" role="listitem" aria-label="Muito satisfeito">
+    <div class="zone-emoji">❤️</div>
+    <div class="zone-label">Muito Satisfeito</div>
+  </div>
+</div>
+
+<!-- Ícone prato para arrastar -->
+<div id="plate" aria-grabbed="false" tabindex="0" role="button" aria-label="Arraste para a sua avaliação">🍽️</div>
+
+<!-- Formulário -->
+<form id="reviewForm" action="submit_review.php" method="POST" novalidate style="margin-top: 20px; max-width: 650px; width: 90vw;">
+  <input type="hidden" name="avaliacao" id="avaliacao" required />
+  <div id="problemField">
+    <label for="problem">Conte-nos no que podemos melhorar</label>
+    <textarea name="problem" id="problem" placeholder="O seu feedback é importante" ></textarea>
+  </div>
+  <button type="submit" id="submitBtn" disabled>Enviar Avaliação</button>
+</form>
+
+<script>
+  const plate = document.getElementById('plate');
+  const zones = document.querySelectorAll('.zone');
+  const inputAval = document.getElementById('avaliacao');
+  const problemField = document.getElementById('problemField');
+  const problemTextarea = document.getElementById('problem');
+  const submitBtn = document.getElementById('submitBtn');
+
+  let dragging = false;
+  let offsetX, offsetY;
+  let selectedZone = null;
+
+  plate.addEventListener('mousedown', dragStart);
+  plate.addEventListener('touchstart', dragStart, {passive: true});
+
+  function dragStart(e) {
+    e.preventDefault();
+    dragging = true;
+    plate.classList.add('dragging');
+
+    // Posição do mouse em relação ao centro do ícone
+    const rect = plate.getBoundingClientRect();
+    if (e.type === 'touchstart') {
+      offsetX = e.touches[0].clientX - rect.left - rect.width / 2;
+      offsetY = e.touches[0].clientY - rect.top - rect.height / 2;
+    } else {
+      offsetX = e.clientX - rect.left - rect.width / 2;
+      offsetY = e.clientY - rect.top - rect.height / 2;
+    }
+
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchmove', dragMove, {passive: false});
+    document.addEventListener('touchend', dragEnd);
+  }
+
+  function dragMove(e) {
+    if (!dragging) return;
+
+    e.preventDefault();
+    let clientX, clientY;
+    if (e.type === 'touchmove') {
+      clientX = e.touches[0].clientX - offsetX;
+      clientY = e.touches[0].clientY - offsetY;
+    } else {
+      clientX = e.clientX - offsetX;
+      clientY = e.clientY - offsetY;
+    }
+
+    plate.style.left = `${clientX}px`;
+    plate.style.top = `${clientY}px`;
+  }
+
+  function dragEnd(e) {
+    dragging = false;
+    plate.classList.remove('dragging');
+
+    // Detectar qual zona está mais próxima do centro do prato
+    let closestZone = null;
+    let closestDistance = Infinity;
+    const plateRect = plate.getBoundingClientRect();
+    const plateCenterX = plateRect.left + plateRect.width / 2;
+    const plateCenterY = plateRect.top + plateRect.height / 2;
+
+    zones.forEach(zone => {
+      const rect = zone.getBoundingClientRect();
+      const zoneCenterX = rect.left + rect.width / 2;
+      const zoneCenterY = rect.top + rect.height / 2;
+
+      const dx = plateCenterX - zoneCenterX;
+      const dy = plateCenterY - zoneCenterY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestZone = zone;
+      }
+    });
+
+    // Se a distância estiver dentro do limite da zona, "prende" o prato nela
+    if (closestDistance < 100) {
+      const zoneRect = closestZone.getBoundingClientRect();
+      const leftPos = zoneRect.left + zoneRect.width / 2 - plate.offsetWidth / 2;
+      const topPos = zoneRect.top + zoneRect.height / 2 - plate.offsetHeight / 2;
+
+      plate.style.left = `${leftPos}px`;
+      plate.style.top = `${topPos}px`;
+      selectedZone = closestZone;
+      inputAval.value = selectedZone.getAttribute('data-value');
+
+      // Mostrar campo problema se avaliação <= 3
+      if (parseInt(inputAval.value) <= 3) {
+        problemField.classList.add('visible');
+        problemTextarea.setAttribute('required', 'required');
+      } else {
+        problemField.classList.remove('visible');
+        problemTextarea.removeAttribute('required');
+        problemTextarea.value = '';
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.classList.add('enabled');
+    } else {
+      // Resetar para centro se não soltou numa zona válida
+      plate.style.left = '50%';
+      plate.style.top = '60vh';
+      plate.style.transform = 'translate(-50%, -50%)';
+      selectedZone = null;
+      inputAval.value = '';
+
+      problemField.classList.remove('visible');
+      problemTextarea.removeAttribute('required');
+      problemTextarea.value = '';
+
+      submitBtn.disabled = true;
+      submitBtn.classList.remove('enabled');
+    }
+
+    // Remove listeners de movimento
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchmove', dragMove);
+    document.removeEventListener('touchend', dragEnd);
+  }
+
+  // Inicializar posição transform para evitar conflito de CSS e JS
+  plate.style.transform = 'translate(-50%, -50%)';
+</script>
+
+</body>
+</html>
